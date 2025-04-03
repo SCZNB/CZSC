@@ -93,4 +93,10 @@ def inclusion_process(df, ticker):
     clean_df['Datetime'] = pd.to_datetime(clean_df['Datetime']).dt.tz_localize(None)
     clean_df.set_index('Datetime', inplace=True)
 
+    mpf.plot(inclusion_resolved,
+         type='candle',
+         volume=True,
+         style='charles',
+         title=f'Processed Klins')
+
     return clean_df
