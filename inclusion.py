@@ -45,21 +45,20 @@ def inclusion_process(df, ticker):
     # 主处理循环
     i = 0
     while i < len(clean_df) - 2:
+        print(f'Length of clean_df: {len(clean_df)}')
         current = clean_df.iloc[i]
         next_ = clean_df.iloc[i + 1]
         further = clean_df.iloc[i + 2]
 
         # 判断包含关系
         is_contained = (next_['High'] >= further['High'] and next_['Low'] <= further['Low']) or \
-                       (further['High'] >= next_['High'] and further['Low'] <= next_['Low'])
+                       (further['High'] >= next_['High'] and further['Low'] <= next_['Low']) or \
+                       (next_['High'] == further['High'] and next_['Low'] == further['Low'])
+
 
         if is_contained:
-            # 方向判断
-            if i > 0:
-                prev_k = clean_df.iloc[i - 1]
-                direction = 'up' if prev_k['High'] < current['High'] else 'down'
-            else:
-                direction = 'up' if current['High'] < next_['High'] else 'down'
+
+            direction = 'up' if current['High'] < next_['High'] else 'down'
 
             # 记录初始时间范围
             start_time = next_['TS']
@@ -78,15 +77,12 @@ def inclusion_process(df, ticker):
                 'TE': end_time
             }
 
-            # 使用i+1.5插入
-            clean_df.loc[i + 1.5] = merged  # 在i+1和i+2之间插入
-            clean_df = clean_df.sort_index().reset_index(drop=True)
 
-            # 删除原K线
-            clean_df.drop([i + 2, i + 3], inplace=True)  # 原i+1变为i+1，原i+2变为i+3
+            clean_df.loc[i + 1] = merged
+
+
+            clean_df.drop(index= i + 2, inplace=True)
             clean_df.reset_index(drop=True, inplace=True)
-
-            print(f"合并 {merged['TS']} 至 {merged['TE']} 的K线")
             # 不增加i，继续检查
         else:
             i += 1
@@ -96,11 +92,5 @@ def inclusion_process(df, ticker):
     clean_df['TE'] = pd.to_datetime(clean_df['TE']).dt.tz_localize(None)
     clean_df['Datetime'] = pd.to_datetime(clean_df['Datetime']).dt.tz_localize(None)
     clean_df.set_index('Datetime', inplace=True)
-    print(clean_df)
-
-    # 结果保存和绘图
-    clean_df.to_csv('inclusion_processed_V1.csv', index=True)
-    mpf.plot(clean_df, type='candle', volume=True, style='charles',
-             title=f'Processed Klines ({ticker})')
 
     return clean_df
